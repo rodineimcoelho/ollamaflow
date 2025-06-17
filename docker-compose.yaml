@@ -1,0 +1,54 @@
+services:
+  redis:
+    image: redis:8-alpine
+    ports:
+      - '6379:6379'
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: ['redis-server', '/usr/local/etc/redis/redis.conf']
+
+  ollama1:
+    image: ollama/ollama
+    ports:
+      - '11434:11434'
+    volumes:
+      - ollama-models-1:/models
+    environment:
+      - OLLAMA_MODELS=/models
+    restart: unless-stopped
+
+  ollama2:
+    image: ollama/ollama
+    ports:
+      - '11435:11434'
+    volumes:
+      - ollama-models-2:/models
+    environment:
+      - OLLAMA_MODELS=/models
+    restart: unless-stopped
+
+  app:
+    build: .
+    command: node dist/main
+    environment:
+      - PORT=3000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    env_file:
+      - .env
+    ports:
+      - '3000:3000'
+    depends_on:
+      - redis
+      - ollama1
+      - ollama2
+    restart: unless-stopped
+    volumes:
+      - .:/usr/src/app
+
+volumes:
+  ollama-models-1:
+  ollama-models-2:
+  redis-data:
