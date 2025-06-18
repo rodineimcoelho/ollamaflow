@@ -45,8 +45,6 @@ services:
       - ollama1
       - ollama2
     restart: unless-stopped
-    volumes:
-      - .:/usr/src/app
 
 volumes:
   ollama-models-1:
