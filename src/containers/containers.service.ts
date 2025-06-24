@@ -16,14 +16,19 @@ export class ContainersService {
 
   getBestContainer(tokenQuantityToSend: number) {
     let bestContainer: Container = this.containers[0];
-    let bestEstimatedWaitTime = 0;
+    let bestEstimatedWaitTime =
+      (bestContainer.queueLenghtInTokens + tokenQuantityToSend) *
+      bestContainer.timePerToken;
 
     for (const container of this.containers) {
       const estimatedWaitTime =
         (container.queueLenghtInTokens + tokenQuantityToSend) *
         container.timePerToken;
 
-      if (!bestContainer) {
+      if (
+        bestEstimatedWaitTime === estimatedWaitTime &&
+        container.queueLenghtInTokens < bestContainer.queueLenghtInTokens
+      ) {
         bestContainer = container;
         bestEstimatedWaitTime = estimatedWaitTime;
       } else if (estimatedWaitTime < bestEstimatedWaitTime) {
