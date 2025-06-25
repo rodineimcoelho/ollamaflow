@@ -1,6 +1,6 @@
 export class Container {
   name: string;
   url: string;
-  timePerToken: number;
-  queueLenghtInTokens: number;
+  timePerToken?: number | null;
+  queueLenghtInTokens?: number | null;
 }

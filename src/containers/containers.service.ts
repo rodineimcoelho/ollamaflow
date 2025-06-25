@@ -8,59 +8,78 @@ export class ContainersService {
   private containers: Container[];
 
   constructor() {
+    this.containers = this.loadContainersConfig();
+  }
+
+  private loadContainersConfig(): Container[] {
     const configPath = path.join(__dirname, '../../containers.config.json');
-    this.containers = JSON.parse(
-      fs.readFileSync(configPath, 'utf-8'),
-    ) as Container[];
+    try {
+      const data = fs.readFileSync(configPath, 'utf-8');
+      return JSON.parse(data) as Container[];
+    } catch (error) {
+      throw new Error(`Error loading containers: ${error}`);
+    }
   }
 
   getBestContainer(tokenQuantityToSend: number) {
-    let bestContainer: Container = this.containers[0];
-    let bestEstimatedWaitTime =
-      (bestContainer.queueLenghtInTokens + tokenQuantityToSend) *
-      bestContainer.timePerToken;
+    const isThereContainersWithTime = this.containers.some(
+      (c) => c.timePerToken != null,
+    );
 
-    for (const container of this.containers) {
-      const estimatedWaitTime =
-        (container.queueLenghtInTokens + tokenQuantityToSend) *
-        container.timePerToken;
+    let candidates: Container[] = [];
+    if (isThereContainersWithTime) {
+      candidates = this.containers.filter(
+        (c) =>
+          c.timePerToken != null ||
+          (c.timePerToken == null &&
+            (!c.queueLenghtInTokens || c.queueLenghtInTokens === 0)),
+      );
+    } else {
+      candidates = this.containers;
+    }
+
+    let bestContainer: Container | null = null;
+    let bestEstimatedWaitTime: number | null = null;
+
+    for (const container of candidates) {
+      const queue = container.queueLenghtInTokens ?? 0;
+      const timePerToken = container.timePerToken ?? 0;
+      const estimatedWaitTime = (queue + tokenQuantityToSend) * timePerToken;
 
       if (
-        bestEstimatedWaitTime === estimatedWaitTime &&
-        container.queueLenghtInTokens < bestContainer.queueLenghtInTokens
+        bestContainer === null ||
+        estimatedWaitTime < (bestEstimatedWaitTime as number) ||
+        (estimatedWaitTime === bestEstimatedWaitTime &&
+          queue < (bestContainer.queueLenghtInTokens ?? 0))
       ) {
-        bestContainer = container;
-        bestEstimatedWaitTime = estimatedWaitTime;
-      } else if (estimatedWaitTime < bestEstimatedWaitTime) {
         bestContainer = container;
         bestEstimatedWaitTime = estimatedWaitTime;
       }
     }
 
-    return { bestContainer, estimatedWaitTime: bestEstimatedWaitTime };
-  }
-
-  estimateWaitTime(container: Container, tokenQuantityToSend: number) {
-    return (
-      (container.queueLenghtInTokens + tokenQuantityToSend) *
-      container.timePerToken
-    );
+    return {
+      bestContainer: bestContainer as Container,
+      estimatedWaitTime: bestEstimatedWaitTime as number,
+    };
   }
 
   incrementContainerQueueLenght(container: Container, tokens: number) {
-    container.queueLenghtInTokens += tokens;
+    container.queueLenghtInTokens =
+      (container.queueLenghtInTokens ?? 0) + tokens;
   }
 
   decrementContainerQueueLenght(container: Container, tokens: number) {
-    container.queueLenghtInTokens -= tokens;
+    container.queueLenghtInTokens = Math.max(
+      (container.queueLenghtInTokens ?? 0) - tokens,
+      0,
+    );
   }
 
   updateContainerTimePerToken(container: Container, timePerToken: number) {
     const alpha = 0.1;
-
     container.timePerToken =
-      container.timePerToken * (1 - alpha) + timePerToken * alpha;
-
-    container.timePerToken = timePerToken;
+      container.timePerToken == null
+        ? timePerToken
+        : container.timePerToken * (1 - alpha) + timePerToken * alpha;
   }
 }
