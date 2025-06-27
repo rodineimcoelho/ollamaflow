@@ -11,7 +11,7 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 @Processor('ollama-jobs', {
-  concurrency: parseInt(process.env.OLLAMA_CONCURRENCY || '4', 10),
+  concurrency: parseInt(process.env.OLLAMA_CONCURRENCY || '512', 10),
 })
 export class OllamaProcessor extends WorkerHost {
   private readonly logger = new Logger(OllamaProcessor.name);
