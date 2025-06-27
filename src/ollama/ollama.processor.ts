@@ -32,10 +32,10 @@ export class OllamaProcessor extends WorkerHost {
 
     this.logger.log(`Processing job ${job.id} for model ${model}`);
 
-    const tokenQuantityEstimate =
+    const { tokenQuantityEstimate, wordCount } =
       this.tokensService.estimateTokenQuantity(prompt);
 
-    this.logger.debug(`Token estimate: ${tokenQuantityEstimate}`);
+    this.logger.debug(`Token quantity estimate: ${tokenQuantityEstimate}`);
 
     const { bestContainer } = this.containersService.getBestContainer(
       tokenQuantityEstimate,
@@ -67,8 +67,10 @@ export class OllamaProcessor extends WorkerHost {
       const timePerToken = total_duration / eval_count / 1e9;
 
       this.logger.debug(
-        `Token estimate: ${tokenQuantityEstimate}, returned eval_count: ${eval_count}`,
+        `Token quantity estimate: ${tokenQuantityEstimate}, real token quantity: ${eval_count}`,
       );
+
+      this.tokensService.updateTokenEstimateFactor(eval_count / wordCount);
 
       if (!isNaN(timePerToken)) {
         this.logger.debug(`Updating timePerToken: ${timePerToken}`);
