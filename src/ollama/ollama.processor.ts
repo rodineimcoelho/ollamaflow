@@ -41,7 +41,9 @@ export class OllamaProcessor extends WorkerHost {
       tokenQuantityEstimate,
     );
 
-    this.logger.log(`Selected container: ${bestContainer.url}`);
+    this.logger.log(
+      `Selected container: ${bestContainer.name} (${bestContainer.url})`,
+    );
 
     this.containersService.incrementContainerQueueLenght(
       bestContainer,
