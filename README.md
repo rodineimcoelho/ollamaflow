@@ -81,10 +81,6 @@ curl -X POST http://localhost:3000/ollama/generate \
 
 A resposta será um JSON com o resultado da geração do modelo.
 
-## Testes de Carga
-
-Para realizar testes de carga, utilize os scripts K6 disponíveis no diretório `k6`. (É necessário ter o k6 instalado).
-
 ## Estrutura do Projeto
 
 - `src/` - Código-fonte principal
