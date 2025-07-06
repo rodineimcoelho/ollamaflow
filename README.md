@@ -1,6 +1,6 @@
-# Ollama Balancer
+# OllamaFlow
 
-Ollama Balancer é um gateway desenvolvido em NestJS para balanceamento de carga entre múltiplas instâncias do Ollama, otimizando o uso de LLMs em containers distintos. O sistema distribui requisições de geração de texto de forma inteligente, levando em conta o tempo estimado de processamento de cada container, a fila de tokens e o desempenho de cada instância.
+OllamaFlow é uma ferramenta desenvolvida em NestJS para balanceamento de carga entre múltiplas instâncias do Ollama, otimizando o uso de LLMs em containers distintos. O sistema distribui requisições de geração de texto de forma inteligente, levando em conta o tempo estimado de processamento de cada container, a fila de tokens e o desempenho de cada instância.
 
 ## Funcionalidades
 
