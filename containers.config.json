@@ -1,14 +1,10 @@
 [
   {
     "name": "container-a",
-    "url": "http://localhost:11434",
-    "timePerToken": 1,
-    "queueLenghtInTokens": 0
+    "url": "http://localhost:11434"
   },
   {
     "name": "container-b",
-    "url": "http://localhost:11435",
-    "timePerToken": 10,
-    "queueLenghtInTokens": 0
+    "url": "http://localhost:11435"
   }
 ]
