@@ -65,14 +65,15 @@ export class OllamaProcessor extends WorkerHost {
         `Response received from container: ${JSON.stringify(data)}`,
       );
 
-      const { eval_count, total_duration } = data;
-      const timePerToken = total_duration / eval_count / 1e9;
+      const { eval_count, total_duration, prompt_eval_count } = data;
+      const totalTokens = eval_count + prompt_eval_count;
+      const timePerToken = total_duration / totalTokens;
 
       this.logger.debug(
-        `Token quantity estimate: ${tokenQuantityEstimate}, real token quantity: ${eval_count}`,
+        `Token quantity estimate: ${tokenQuantityEstimate}, real token quantity: ${totalTokens}`,
       );
 
-      this.tokensService.updateTokenEstimateFactor(eval_count / wordCount);
+      this.tokensService.updateTokenEstimateFactor(totalTokens / wordCount);
 
       if (!isNaN(timePerToken)) {
         this.logger.debug(`Updating timePerToken: ${timePerToken}`);
