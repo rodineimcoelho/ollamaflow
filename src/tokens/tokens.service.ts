@@ -7,7 +7,7 @@ export class TokensService {
 
   constructor(private readonly configService: ConfigService) {
     const tokenEstimateFactor = parseFloat(
-      this.configService.get<string>('TOKEN_ESTIMATE_FACTOR', '2.7'),
+      this.configService.get<string>('TOKEN_ESTIMATE_FACTOR', '3'),
     );
 
     if (isNaN(tokenEstimateFactor) || tokenEstimateFactor <= 0) {
