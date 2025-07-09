@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Container } from './container';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -6,9 +7,17 @@ import * as path from 'path';
 @Injectable()
 export class ContainersService {
   private containers: Container[];
+  private queueWeightAlpha: number;
+  private timePerTokenAlpha: number;
 
-  constructor() {
+  constructor(private readonly configService: ConfigService) {
     this.containers = this.loadContainersConfig();
+    this.queueWeightAlpha = parseFloat(
+      this.configService.get<string>('QUEUE_WEIGHT_ALPHA') ?? '0.1',
+    );
+    this.timePerTokenAlpha = parseFloat(
+      this.configService.get<string>('TIME_PER_TOKEN_ALPHA') ?? '0.1',
+    );
   }
 
   private loadContainersConfig(): Container[] {
@@ -79,7 +88,7 @@ export class ContainersService {
   }
 
   updateContainerTimePerToken(container: Container, timePerToken: number) {
-    const alpha = 0.1;
+    const alpha = this.timePerTokenAlpha;
     container.timePerToken =
       container.timePerToken == null
         ? timePerToken
@@ -92,7 +101,7 @@ export class ContainersService {
     expectedTime: number,
   ) {
     const ratio = realTime / expectedTime;
-    const alpha = 0.05;
+    const alpha = this.queueWeightAlpha;
     const queueWeight = container.queueWeight ?? 1;
 
     container.queueWeight = Math.max(
