@@ -32,7 +32,7 @@ export class ContainersService {
         (c) =>
           c.timePerToken != null ||
           (c.timePerToken == null &&
-            (!c.queueLenghtInTokens || c.queueLenghtInTokens === 0)),
+            (!c.queueLengthInTokens || c.queueLengthInTokens === 0)),
       );
     } else {
       candidates = this.containers;
@@ -42,7 +42,7 @@ export class ContainersService {
     let bestEstimatedWaitTime: number | null = null;
 
     for (const container of candidates) {
-      const queue = container.queueLenghtInTokens ?? 0;
+      const queue = container.queueLengthInTokens ?? 0;
       const timePerToken = container.timePerToken ?? 0;
       const queueWeight = container.queueWeight ?? 1;
 
@@ -53,7 +53,7 @@ export class ContainersService {
         bestContainer === null ||
         estimatedWaitTime < (bestEstimatedWaitTime as number) ||
         (estimatedWaitTime === bestEstimatedWaitTime &&
-          queue < (bestContainer.queueLenghtInTokens ?? 0))
+          queue < (bestContainer.queueLengthInTokens ?? 0))
       ) {
         bestContainer = container;
         bestEstimatedWaitTime = estimatedWaitTime;
@@ -67,13 +67,13 @@ export class ContainersService {
   }
 
   incrementContainerQueueLenght(container: Container, tokens: number) {
-    container.queueLenghtInTokens =
-      (container.queueLenghtInTokens ?? 0) + tokens;
+    container.queueLengthInTokens =
+      (container.queueLengthInTokens ?? 0) + tokens;
   }
 
   decrementContainerQueueLenght(container: Container, tokens: number) {
-    container.queueLenghtInTokens = Math.max(
-      (container.queueLenghtInTokens ?? 0) - tokens,
+    container.queueLengthInTokens = Math.max(
+      (container.queueLengthInTokens ?? 0) - tokens,
       0,
     );
   }
