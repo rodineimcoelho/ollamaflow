@@ -43,7 +43,7 @@ export class OllamaProcessor extends WorkerHost {
       this.containersService.getBestContainer(tokenQuantityEstimate);
 
     this.logger.log(
-      `[Job ${job.id}] Selected container: ${bestContainer.name} (${bestContainer.url})`,
+      `[Job ${job.id}][Container ${bestContainer.name}] Selected container: ${bestContainer.name} (${bestContainer.url})`,
     );
 
     this.containersService.incrementContainerQueueLenght(
@@ -53,7 +53,7 @@ export class OllamaProcessor extends WorkerHost {
 
     try {
       this.logger.debug(
-        `[Job ${job.id}] Sending request to ${bestContainer.url}/api/generate`,
+        `[Job ${job.id}][Container ${bestContainer.name}] Sending request to ${bestContainer.url}/api/generate`,
       );
       const startTime = Date.now();
       const { data }: AxiosResponse<GenerateResponseDto> = await firstValueFrom(
@@ -66,14 +66,20 @@ export class OllamaProcessor extends WorkerHost {
       );
       const duration = Date.now() - startTime;
 
-      this.logger.debug(`[Job ${job.id}] Response: ${JSON.stringify(data)}`);
+      this.logger.log(
+        `[Job ${job.id}][Container ${bestContainer.name}] Expected time: ${estimatedWaitTime.toFixed(2)} ms, real time: ${duration.toFixed(2)} ms`,
+      );
+
+      this.logger.debug(
+        `[Job ${job.id}][Container ${bestContainer.name}] Response: ${JSON.stringify(data)}`,
+      );
 
       const { eval_count, prompt_eval_count } = data;
       const totalTokens = eval_count + prompt_eval_count;
       const timePerToken = duration / totalTokens;
 
       this.logger.debug(
-        `[Job ${job.id}] Token estimate: ${tokenQuantityEstimate}, real: ${totalTokens}`,
+        `[Job ${job.id}][Container ${bestContainer.name}] Token estimate: ${tokenQuantityEstimate}, real: ${totalTokens}`,
       );
 
       this.tokensService.updateTokenEstimateFactor(totalTokens / wordCount);
@@ -85,7 +91,7 @@ export class OllamaProcessor extends WorkerHost {
       );
 
       this.logger.debug(
-        `[Job ${job.id}] Updating timePerToken: ${timePerToken}`,
+        `[Job ${job.id}][Container ${bestContainer.name}] Updating timePerToken: ${timePerToken}`,
       );
 
       this.containersService.updateContainerTimePerToken(
@@ -93,7 +99,9 @@ export class OllamaProcessor extends WorkerHost {
         timePerToken,
       );
 
-      this.logger.log(`[Job ${job.id}] Processed successfully.`);
+      this.logger.log(
+        `[Job ${job.id}][Container ${bestContainer.name}] Processed successfully.`,
+      );
 
       return data as unknown;
     } catch (error: unknown) {
@@ -113,7 +121,7 @@ export class OllamaProcessor extends WorkerHost {
       throw error;
     } finally {
       this.logger.debug(
-        `Decrementing queue for container ${bestContainer.url}`,
+        `[Job ${job.id}][Container ${bestContainer.name}] Decrementing queue`,
       );
 
       this.containersService.decrementContainerQueueLenght(
