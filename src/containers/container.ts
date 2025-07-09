@@ -3,4 +3,5 @@ export class Container {
   url: string;
   timePerToken?: number | null;
   queueLenghtInTokens?: number | null;
+  queueWeight?: number;
 }

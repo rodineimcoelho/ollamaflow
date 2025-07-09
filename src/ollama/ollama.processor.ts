@@ -37,9 +37,8 @@ export class OllamaProcessor extends WorkerHost {
 
     this.logger.debug(`Token quantity estimate: ${tokenQuantityEstimate}`);
 
-    const { bestContainer } = this.containersService.getBestContainer(
-      tokenQuantityEstimate,
-    );
+    const { bestContainer, estimatedWaitTime } =
+      this.containersService.getBestContainer(tokenQuantityEstimate);
 
     this.logger.log(
       `Selected container: ${bestContainer.name} (${bestContainer.url})`,
@@ -52,6 +51,7 @@ export class OllamaProcessor extends WorkerHost {
 
     try {
       this.logger.debug(`Sending request to ${bestContainer.url}/api/generate`);
+      const startTime = Date.now();
       const { data }: AxiosResponse<GenerateResponseDto> = await firstValueFrom(
         this.httpService.post(`${bestContainer.url}/api/generate`, {
           model,
@@ -60,14 +60,15 @@ export class OllamaProcessor extends WorkerHost {
           format: 'json',
         }),
       );
+      const duration = Date.now() - startTime;
 
       this.logger.debug(
         `Response received from container: ${JSON.stringify(data)}`,
       );
 
-      const { eval_count, total_duration, prompt_eval_count } = data;
+      const { eval_count, prompt_eval_count } = data;
       const totalTokens = eval_count + prompt_eval_count;
-      const timePerToken = total_duration / totalTokens;
+      const timePerToken = duration / totalTokens;
 
       this.logger.debug(
         `Token quantity estimate: ${tokenQuantityEstimate}, real token quantity: ${totalTokens}`,
@@ -75,13 +76,17 @@ export class OllamaProcessor extends WorkerHost {
 
       this.tokensService.updateTokenEstimateFactor(totalTokens / wordCount);
 
-      if (!isNaN(timePerToken)) {
-        this.logger.debug(`Updating timePerToken: ${timePerToken}`);
-        this.containersService.updateContainerTimePerToken(
-          bestContainer,
-          timePerToken,
-        );
-      }
+      this.containersService.updateContainerQueueWeight(
+        bestContainer,
+        duration,
+        estimatedWaitTime,
+      );
+
+      this.logger.debug(`Updating timePerToken: ${timePerToken}`);
+      this.containersService.updateContainerTimePerToken(
+        bestContainer,
+        timePerToken,
+      );
 
       this.logger.log(`Job ${job.id} processed successfully.`);
 

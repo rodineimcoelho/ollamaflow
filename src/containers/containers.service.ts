@@ -44,7 +44,10 @@ export class ContainersService {
     for (const container of candidates) {
       const queue = container.queueLenghtInTokens ?? 0;
       const timePerToken = container.timePerToken ?? 0;
-      const estimatedWaitTime = (queue + tokenQuantityToSend) * timePerToken;
+      const queueWeight = container.queueWeight ?? 1;
+
+      const estimatedWaitTime =
+        (queue * queueWeight + tokenQuantityToSend) * timePerToken;
 
       if (
         bestContainer === null ||
@@ -81,5 +84,20 @@ export class ContainersService {
       container.timePerToken == null
         ? timePerToken
         : container.timePerToken * (1 - alpha) + timePerToken * alpha;
+  }
+
+  updateContainerQueueWeight(
+    container: Container,
+    realTime: number,
+    expectedTime: number,
+  ) {
+    const ratio = realTime / expectedTime;
+    const alpha = 0.05;
+    const queueWeight = container.queueWeight ?? 1;
+
+    container.queueWeight = Math.max(
+      0,
+      Math.min(1, queueWeight * (1 + alpha * (ratio - 1))),
+    );
   }
 }
