@@ -23,7 +23,10 @@ export class OllamaProcessor extends WorkerHost {
     private readonly configService: ConfigService,
   ) {
     super();
-    const concurrency = this.configService.get<number>('OLLAMA_CONCURRENCY', 4);
+    const concurrency = this.configService.get<number>(
+      'OLLAMA_CONCURRENCY',
+      512,
+    );
     this.logger.log(`Configured concurrency: ${concurrency}`);
   }
 
