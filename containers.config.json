@@ -1,10 +1,10 @@
 [
   {
     "name": "container-a",
-    "url": "http://localhost:11434"
+    "url": "http://ollama1:11434"
   },
   {
     "name": "container-b",
-    "url": "http://localhost:11435"
+    "url": "http://ollama2:11434"
   }
 ]

@@ -18,6 +18,13 @@ services:
     environment:
       - OLLAMA_MODELS=/models
     restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   ollama2:
     image: ollama/ollama
@@ -28,6 +35,13 @@ services:
     environment:
       - OLLAMA_MODELS=/models
     restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   app:
     build: .
