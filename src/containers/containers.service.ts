@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Container } from './container';
 import * as fs from 'fs';
 import * as path from 'path';
+import { TokensService } from 'src/tokens/tokens.service';
 
 @Injectable()
 export class ContainersService {
@@ -10,7 +11,10 @@ export class ContainersService {
   private queueWeightAlpha: number;
   private timePerTokenAlpha: number;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly tokensService: TokensService,
+  ) {
     this.containers = this.loadContainersConfig();
     this.queueWeightAlpha = parseFloat(
       this.configService.get<string>('QUEUE_WEIGHT_ALPHA') ?? '0.1',
@@ -40,8 +44,7 @@ export class ContainersService {
       candidates = this.containers.filter(
         (c) =>
           c.timePerToken != null ||
-          (c.timePerToken == null &&
-            (!c.queueLengthInTokens || c.queueLengthInTokens === 0)),
+          (c.timePerToken == null && !c.queueLengthInCharacters),
       );
     } else {
       candidates = this.containers;
@@ -49,40 +52,47 @@ export class ContainersService {
 
     let bestContainer: Container | null = null;
     let bestEstimatedWaitTime: number | null = null;
+    let previousQueueLengthInTokens: number | null = null;
 
     for (const container of candidates) {
-      const queue = container.queueLengthInTokens ?? 0;
+      const queueLenghtInCharacters = container.queueLengthInCharacters ?? 0;
+      const queueLenghtInTokens =
+        this.tokensService.calculateTokensByCharacters(queueLenghtInCharacters);
+
       const timePerToken = container.timePerToken ?? 0;
       const queueWeight = container.queueWeight ?? 1;
 
       const estimatedWaitTime =
-        (queue * queueWeight + tokenQuantityToSend) * timePerToken;
+        (queueLenghtInTokens * queueWeight + tokenQuantityToSend) *
+        timePerToken;
 
       if (
         bestContainer === null ||
         estimatedWaitTime < (bestEstimatedWaitTime as number) ||
         (estimatedWaitTime === bestEstimatedWaitTime &&
-          queue < (bestContainer.queueLengthInTokens ?? 0))
+          queueLenghtInTokens < (bestContainer.queueLengthInCharacters ?? 0))
       ) {
         bestContainer = container;
         bestEstimatedWaitTime = estimatedWaitTime;
+        previousQueueLengthInTokens = queueLenghtInTokens;
       }
     }
 
     return {
       bestContainer: bestContainer as Container,
       estimatedWaitTime: bestEstimatedWaitTime as number,
+      previousQueueLengthInTokens: previousQueueLengthInTokens as number,
     };
   }
 
-  incrementContainerQueueLenght(container: Container, tokens: number) {
-    container.queueLengthInTokens =
-      (container.queueLengthInTokens ?? 0) + tokens;
+  incrementContainerQueueLenght(container: Container, charactersCount: number) {
+    container.queueLengthInCharacters =
+      (container.queueLengthInCharacters ?? 0) + charactersCount;
   }
 
-  decrementContainerQueueLenght(container: Container, tokens: number) {
-    container.queueLengthInTokens = Math.max(
-      (container.queueLengthInTokens ?? 0) - tokens,
+  decrementContainerQueueLenght(container: Container, charactersCount: number) {
+    container.queueLengthInCharacters = Math.max(
+      (container.queueLengthInCharacters ?? 0) - charactersCount,
       0,
     );
   }
@@ -99,14 +109,12 @@ export class ContainersService {
     container: Container,
     realTime: number,
     expectedTime: number,
+    previousQueueLengthInTokens: number,
   ) {
-    const ratio = realTime / expectedTime;
+    const difference = expectedTime - realTime;
     const alpha = this.queueWeightAlpha;
     const queueWeight = container.queueWeight ?? 1;
-
-    container.queueWeight = Math.max(
-      0,
-      Math.min(1, queueWeight * (1 + alpha * (ratio - 1))),
-    );
+    container.queueWeight =
+      queueWeight + alpha * difference * previousQueueLengthInTokens;
   }
 }

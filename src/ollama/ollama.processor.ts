@@ -35,14 +35,14 @@ export class OllamaProcessor extends WorkerHost {
 
     this.logger.log(`[Job ${job.id}] Processing for model "${model}"`);
 
-    const { tokenQuantityEstimate, wordCount } =
+    const { tokenQuantityEstimate, charactersCount } =
       this.tokensService.estimateTokenQuantity(prompt);
 
     this.logger.debug(
       `[Job ${job.id}] Token estimate: ${tokenQuantityEstimate}`,
     );
 
-    const { bestContainer, estimatedWaitTime } =
+    const { bestContainer, estimatedWaitTime, previousQueueLengthInTokens } =
       this.containersService.getBestContainer(tokenQuantityEstimate);
 
     this.logger.log(
@@ -51,7 +51,7 @@ export class OllamaProcessor extends WorkerHost {
 
     this.containersService.incrementContainerQueueLenght(
       bestContainer,
-      tokenQuantityEstimate,
+      charactersCount,
     );
 
     try {
@@ -85,12 +85,15 @@ export class OllamaProcessor extends WorkerHost {
         `[Job ${job.id}][Container ${bestContainer.name}] Token estimate: ${tokenQuantityEstimate}, real: ${totalTokens}`,
       );
 
-      this.tokensService.updateTokenEstimateFactor(totalTokens / wordCount);
+      this.tokensService.updateTokenEstimateFactor(
+        totalTokens / charactersCount,
+      );
 
       this.containersService.updateContainerQueueWeight(
         bestContainer,
         duration,
         estimatedWaitTime,
+        previousQueueLengthInTokens,
       );
 
       this.logger.debug(
@@ -129,7 +132,7 @@ export class OllamaProcessor extends WorkerHost {
 
       this.containersService.decrementContainerQueueLenght(
         bestContainer,
-        tokenQuantityEstimate,
+        charactersCount,
       );
     }
   }

@@ -20,9 +20,16 @@ export class TokensService {
   }
 
   estimateTokenQuantity(text: string) {
-    const wordCount = text.trim().split(/\s+/).length;
-    const tokenQuantityEstimate = wordCount * this.tokenEstimateFactor;
-    return { wordCount, tokenQuantityEstimate };
+    const normalizedText = text.replace(/\s+/g, ' ').trim();
+    const charactersCount = normalizedText.length;
+    const tokenQuantityEstimate =
+      this.calculateTokensByCharacters(charactersCount);
+
+    return { charactersCount, tokenQuantityEstimate };
+  }
+
+  calculateTokensByCharacters(charactersCount: number): number {
+    return charactersCount * this.tokenEstimateFactor;
   }
 
   updateTokenEstimateFactor(newFactor: number) {

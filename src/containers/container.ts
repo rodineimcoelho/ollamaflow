@@ -2,6 +2,6 @@ export class Container {
   name: string;
   url: string;
   timePerToken?: number | null;
-  queueLengthInTokens?: number | null;
+  queueLengthInCharacters?: number | null;
   queueWeight?: number;
 }
