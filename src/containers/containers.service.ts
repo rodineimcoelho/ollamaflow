@@ -82,6 +82,7 @@ export class ContainersService {
       bestContainer: bestContainer as Container,
       estimatedWaitTime: bestEstimatedWaitTime as number,
       previousQueueLengthInTokens: previousQueueLengthInTokens as number,
+      estimatedTimePerToken: bestContainer?.timePerToken ?? 0,
     };
   }
 

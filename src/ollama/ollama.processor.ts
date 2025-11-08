@@ -9,6 +9,7 @@ import { AxiosResponse } from 'axios';
 import { GenerateResponseDto } from './dto/generate-response.dto';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { LoggingService } from 'src/logging/logging.service';
 
 @Processor('ollama-jobs', {
   concurrency: parseInt(process.env.OLLAMA_CONCURRENCY || '512', 10),
@@ -21,6 +22,7 @@ export class OllamaProcessor extends WorkerHost {
     private readonly containersService: ContainersService,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly loggingService: LoggingService,
   ) {
     super();
     const concurrency = this.configService.get<number>(
@@ -38,12 +40,12 @@ export class OllamaProcessor extends WorkerHost {
     const { tokenQuantityEstimate, charactersCount } =
       this.tokensService.estimateTokenQuantity(prompt);
 
-    this.logger.debug(
-      `[Job ${job.id}] Token estimate: ${tokenQuantityEstimate}`,
-    );
-
-    const { bestContainer, estimatedWaitTime, previousQueueLengthInTokens } =
-      this.containersService.getBestContainer(tokenQuantityEstimate);
+    const {
+      bestContainer,
+      estimatedWaitTime,
+      previousQueueLengthInTokens,
+      estimatedTimePerToken,
+    } = this.containersService.getBestContainer(tokenQuantityEstimate);
 
     this.logger.log(
       `[Job ${job.id}][Container ${bestContainer.name}] Selected container: ${bestContainer.name} (${bestContainer.url})`,
@@ -55,7 +57,7 @@ export class OllamaProcessor extends WorkerHost {
     );
 
     try {
-      this.logger.debug(
+      this.logger.log(
         `[Job ${job.id}][Container ${bestContainer.name}] Sending request to ${bestContainer.url}/api/generate`,
       );
       const startTime = Date.now();
@@ -69,10 +71,6 @@ export class OllamaProcessor extends WorkerHost {
       );
       const duration = Date.now() - startTime;
 
-      this.logger.log(
-        `[Job ${job.id}][Container ${bestContainer.name}] Expected time: ${estimatedWaitTime.toFixed(2)} ms, real time: ${duration.toFixed(2)} ms`,
-      );
-
       this.logger.debug(
         `[Job ${job.id}][Container ${bestContainer.name}] Response: ${JSON.stringify(data)}`,
       );
@@ -81,8 +79,34 @@ export class OllamaProcessor extends WorkerHost {
       const totalTokens = eval_count + prompt_eval_count;
       const timePerToken = duration / totalTokens;
 
-      this.logger.debug(
+      this.logger.log(
+        `[Job ${job.id}][Container ${bestContainer.name}] Expected time: ${estimatedWaitTime.toFixed(2)} ms, real time: ${duration.toFixed(2)} ms`,
+      );
+
+      this.logger.log(
         `[Job ${job.id}][Container ${bestContainer.name}] Token estimate: ${tokenQuantityEstimate}, real: ${totalTokens}`,
+      );
+
+      this.logger.log(
+        `[Job ${job.id}][Container ${bestContainer.name}] Time per token estimate: ${estimatedTimePerToken.toFixed(2)} ms/token, real: ${timePerToken.toFixed(2)} ms/token`,
+      );
+
+      this.loggingService.logEstimateComparison(
+        'wait_time',
+        estimatedWaitTime,
+        duration,
+      );
+
+      this.loggingService.logEstimateComparison(
+        'token_quantity',
+        tokenQuantityEstimate,
+        totalTokens,
+      );
+
+      this.loggingService.logEstimateComparison(
+        'time_per_token',
+        estimatedTimePerToken,
+        timePerToken,
       );
 
       this.tokensService.updateTokenEstimateFactor(
@@ -94,10 +118,6 @@ export class OllamaProcessor extends WorkerHost {
         duration,
         estimatedWaitTime,
         previousQueueLengthInTokens,
-      );
-
-      this.logger.debug(
-        `[Job ${job.id}][Container ${bestContainer.name}] Updating timePerToken: ${timePerToken}`,
       );
 
       this.containersService.updateContainerTimePerToken(

@@ -7,6 +7,7 @@ import { OllamaProcessor } from './ollama.processor';
 import { ContainersModule } from 'src/containers/containers.module';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
+import { LoggingModule } from 'src/logging/logging.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ConfigModule } from '@nestjs/config';
     HttpModule,
     TokensModule,
     ContainersModule,
+    LoggingModule,
   ],
   controllers: [OllamaController],
   providers: [OllamaService, OllamaProcessor],
