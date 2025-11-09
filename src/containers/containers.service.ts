@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Container } from './container';
 import * as fs from 'fs';
@@ -7,6 +7,7 @@ import { TokensService } from 'src/tokens/tokens.service';
 
 @Injectable()
 export class ContainersService {
+  private readonly logger = new Logger(ContainersService.name);
   private containers: Container[];
   private queueWeightAlpha: number;
   private timePerTokenAlpha: number;
@@ -115,7 +116,13 @@ export class ContainersService {
     const difference = expectedTime - realTime;
     const alpha = this.queueWeightAlpha;
     const queueWeight = container.queueWeight ?? 1;
-    container.queueWeight =
+    const newQueueWeight =
       queueWeight + alpha * difference * previousQueueLengthInTokens;
+
+    this.logger.debug(
+      `Updating queue weight for container ${container.name}: ${newQueueWeight} = ${queueWeight} + ${alpha} * ${difference} * ${previousQueueLengthInTokens}`,
+    );
+
+    container.queueWeight = newQueueWeight;
   }
 }
