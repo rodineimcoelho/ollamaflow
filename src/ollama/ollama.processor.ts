@@ -40,12 +40,8 @@ export class OllamaProcessor extends WorkerHost {
     const { tokenQuantityEstimate, charactersCount } =
       this.tokensService.estimateTokenQuantity(prompt);
 
-    const {
-      bestContainer,
-      estimatedWaitTime,
-      previousQueueLengthInTokens,
-      estimatedTimePerToken,
-    } = this.containersService.getBestContainer(tokenQuantityEstimate);
+    const { bestContainer, estimatedWaitTime, estimatedTimePerToken } =
+      this.containersService.getBestContainer(tokenQuantityEstimate);
 
     this.logger.log(
       `[Job ${job.id}][Container ${bestContainer.name}] Selected container: ${bestContainer.name} (${bestContainer.url})`,
@@ -117,7 +113,6 @@ export class OllamaProcessor extends WorkerHost {
         bestContainer,
         duration,
         estimatedWaitTime,
-        previousQueueLengthInTokens,
       );
 
       this.containersService.updateContainerTimePerToken(

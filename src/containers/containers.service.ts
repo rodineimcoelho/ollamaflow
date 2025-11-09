@@ -53,7 +53,6 @@ export class ContainersService {
 
     let bestContainer: Container | null = null;
     let bestEstimatedWaitTime: number | null = null;
-    let previousQueueLengthInTokens: number | null = null;
 
     for (const container of candidates) {
       const queueLenghtInCharacters = container.queueLengthInCharacters ?? 0;
@@ -75,14 +74,12 @@ export class ContainersService {
       ) {
         bestContainer = container;
         bestEstimatedWaitTime = estimatedWaitTime;
-        previousQueueLengthInTokens = queueLenghtInTokens;
       }
     }
 
     return {
       bestContainer: bestContainer as Container,
       estimatedWaitTime: bestEstimatedWaitTime as number,
-      previousQueueLengthInTokens: previousQueueLengthInTokens as number,
       estimatedTimePerToken: bestContainer?.timePerToken ?? 0,
     };
   }
@@ -111,16 +108,18 @@ export class ContainersService {
     container: Container,
     realTime: number,
     expectedTime: number,
-    previousQueueLengthInTokens: number,
   ) {
-    const difference = expectedTime - realTime;
+    const ratio = realTime / expectedTime;
     const alpha = this.queueWeightAlpha;
     const queueWeight = container.queueWeight ?? 1;
-    const newQueueWeight =
-      queueWeight + alpha * difference * previousQueueLengthInTokens;
+
+    const newQueueWeight = Math.max(
+      0,
+      Math.min(2, queueWeight * (1 + alpha * (ratio - 1))),
+    );
 
     this.logger.debug(
-      `Updating queue weight for container ${container.name}: ${newQueueWeight} = ${queueWeight} + ${alpha} * ${difference} * ${previousQueueLengthInTokens}`,
+      `Updating queue weight for container ${container.name}: ${newQueueWeight} = ${queueWeight} * (1 + ${alpha} * (${ratio} - 1))`,
     );
 
     container.queueWeight = newQueueWeight;
