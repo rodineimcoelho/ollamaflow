@@ -109,6 +109,13 @@ export class ContainersService {
     realTime: number,
     expectedTime: number,
   ) {
+    if (expectedTime === 0) {
+      this.logger.debug(
+        `Expected time is 0 for container ${container.name}, skipping queue weight update.`,
+      );
+      return;
+    }
+
     const ratio = realTime / expectedTime;
     const alpha = this.queueWeightAlpha;
     const queueWeight = container.queueWeight ?? 1;
