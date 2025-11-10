@@ -24,7 +24,9 @@ export class OllamaService {
   }
 
   async enqueueGenerateJobAndAwait(generateDto: GenerateDto) {
-    const job = await this.queue.add('generate', generateDto);
+    const job = await this.queue.add('generate', generateDto, {
+      attempts: 4,
+    });
     const response: unknown = await job.waitUntilFinished(this.queueEvents);
     return response;
   }
